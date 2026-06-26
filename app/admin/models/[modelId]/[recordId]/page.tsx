@@ -50,7 +50,7 @@ export default function ViewRecordPage() {
         return new Date(value).toLocaleString();
       case "json":
         return (
-          <pre className="text-xs bg-gray-50 p-2 rounded overflow-x-auto">
+          <pre className="text-xs bg-muted p-2 rounded overflow-x-auto">
             {JSON.stringify(value, null, 2)}
           </pre>
         );
@@ -60,7 +60,7 @@ export default function ViewRecordPage() {
             href={value}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-indigo-600 hover:underline"
+            className="text-primary hover:underline"
           >
             {value}
           </a>
@@ -69,7 +69,7 @@ export default function ViewRecordPage() {
         return (
           <a
             href={`mailto:${value}`}
-            className="text-indigo-600 hover:underline"
+            className="text-primary hover:underline"
           >
             {value}
           </a>
@@ -90,11 +90,11 @@ export default function ViewRecordPage() {
         <div>
           <div className="flex items-center gap-3">
             <span className="text-3xl">{model.icon}</span>
-            <h1 className="text-3xl font-bold text-gray-900">
+            <h1 className="text-3xl font-bold text-foreground">
               {model.label} Details
             </h1>
           </div>
-          <p className="mt-2 text-sm text-gray-500">
+          <p className="mt-2 text-sm text-muted-foreground">
             Created: {new Date(record.createdAt).toLocaleString()} • Updated:{" "}
             {new Date(record.updatedAt).toLocaleString()}
           </p>
@@ -102,7 +102,7 @@ export default function ViewRecordPage() {
         <div className="flex items-center gap-2">
           <Link
             href={`/admin/models/${modelId}/${recordId}/edit`}
-            className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+            className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90"
           >
             Edit
           </Link>
@@ -116,15 +116,15 @@ export default function ViewRecordPage() {
       </div>
 
       {/* Record Data */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-        <dl className="divide-y divide-gray-200">
+      <div className="bg-card rounded-lg shadow-sm border border-border overflow-hidden">
+        <dl className="divide-y divide-border">
           {model.fields.map((field) => (
             <div key={field.name} className="px-6 py-4 grid grid-cols-3 gap-4">
-              <dt className="text-sm font-medium text-gray-700">
+              <dt className="text-sm font-medium text-foreground">
                 {field.label}
                 {field.required && <span className="text-red-500 ml-1">*</span>}
               </dt>
-              <dd className="text-sm text-gray-900 col-span-2">
+              <dd className="text-sm text-foreground col-span-2">
                 {formatValue(field, record.data[field.name])}
               </dd>
             </div>
@@ -136,7 +136,7 @@ export default function ViewRecordPage() {
       <div className="flex items-center justify-between">
         <Link
           href={`/admin/models/${modelId}`}
-          className="text-indigo-600 hover:text-indigo-800"
+          className="text-primary hover:text-primary"
         >
           ← Back to {model.pluralLabel}
         </Link>

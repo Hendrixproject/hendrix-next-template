@@ -93,22 +93,22 @@ export default function SchemaBuilder() {
   return (
     <div className="max-w-4xl mx-auto space-y-8">
       <div>
-        <h1 className="text-3xl font-bold text-gray-900">Schema Builder</h1>
-        <p className="mt-2 text-gray-600">
+        <h1 className="text-3xl font-bold text-foreground">Schema Builder</h1>
+        <p className="mt-2 text-muted-foreground">
           Create a new model with custom fields
         </p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Model Basic Info */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 space-y-4">
-          <h2 className="text-xl font-semibold text-gray-900">
+        <div className="bg-card rounded-lg shadow-sm border border-border p-6 space-y-4">
+          <h2 className="text-xl font-semibold text-foreground">
             Model Information
           </h2>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-foreground mb-1">
                 Model Name *
               </label>
               <input
@@ -117,15 +117,15 @@ export default function SchemaBuilder() {
                 onChange={(e) => setModelName(e.target.value)}
                 placeholder="e.g., product, customer"
                 required
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-input rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent"
               />
-              <p className="mt-1 text-xs text-gray-500">
+              <p className="mt-1 text-xs text-muted-foreground">
                 Internal name (lowercase, no spaces)
               </p>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-foreground mb-1">
                 Display Label *
               </label>
               <input
@@ -134,12 +134,12 @@ export default function SchemaBuilder() {
                 onChange={(e) => setModelLabel(e.target.value)}
                 placeholder="e.g., Product, Customer"
                 required
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-input rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-foreground mb-1">
                 Plural Label
               </label>
               <input
@@ -147,12 +147,12 @@ export default function SchemaBuilder() {
                 value={pluralLabel}
                 onChange={(e) => setPluralLabel(e.target.value)}
                 placeholder="e.g., Products, Customers"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-input rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-foreground mb-1">
                 Icon
               </label>
               <div className="flex gap-2 flex-wrap">
@@ -163,8 +163,8 @@ export default function SchemaBuilder() {
                     onClick={() => setSelectedIcon(icon)}
                     className={`text-2xl p-2 rounded-lg border-2 transition-colors ${
                       selectedIcon === icon
-                        ? "border-indigo-500 bg-indigo-50"
-                        : "border-gray-200 hover:border-gray-300"
+                        ? "border-accent bg-primary/10"
+                        : "border-border hover:border-input"
                     }`}
                   >
                     {icon}
@@ -175,7 +175,7 @@ export default function SchemaBuilder() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-foreground mb-1">
               Description
             </label>
             <textarea
@@ -183,19 +183,19 @@ export default function SchemaBuilder() {
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Describe what this model is for..."
               rows={3}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-input rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent"
             />
           </div>
         </div>
 
         {/* Fields */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 space-y-4">
+        <div className="bg-card rounded-lg shadow-sm border border-border p-6 space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold text-gray-900">Fields</h2>
+            <h2 className="text-xl font-semibold text-foreground">Fields</h2>
             <button
               type="button"
               onClick={addField}
-              className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm"
+              className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 text-sm"
             >
               + Add Field
             </button>
@@ -205,11 +205,11 @@ export default function SchemaBuilder() {
             {fields.map((field, index) => (
               <div
                 key={index}
-                className="p-4 border border-gray-200 rounded-lg space-y-3"
+                className="p-4 border border-border rounded-lg space-y-3"
               >
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                    <label className="block text-xs font-medium text-foreground mb-1">
                       Field Name *
                     </label>
                     <input
@@ -223,12 +223,12 @@ export default function SchemaBuilder() {
                         })
                       }
                       placeholder="field_name"
-                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                      className="w-full px-3 py-2 text-sm border border-input rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                    <label className="block text-xs font-medium text-foreground mb-1">
                       Display Label *
                     </label>
                     <input
@@ -238,12 +238,12 @@ export default function SchemaBuilder() {
                         updateField(index, { label: e.target.value })
                       }
                       placeholder="Field Label"
-                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                      className="w-full px-3 py-2 text-sm border border-input rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                    <label className="block text-xs font-medium text-foreground mb-1">
                       Field Type *
                     </label>
                     <select
@@ -253,7 +253,7 @@ export default function SchemaBuilder() {
                           type: e.target.value as FieldType,
                         })
                       }
-                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                      className="w-full px-3 py-2 text-sm border border-input rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent"
                     >
                       {FIELD_TYPES.map((type) => (
                         <option key={type.value} value={type.value}>
@@ -272,9 +272,9 @@ export default function SchemaBuilder() {
                       onChange={(e) =>
                         updateField(index, { required: e.target.checked })
                       }
-                      className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                      className="rounded border-input text-primary focus:ring-accent"
                     />
-                    <span className="text-gray-700">Required</span>
+                    <span className="text-foreground">Required</span>
                   </label>
 
                   <label className="flex items-center gap-2 text-sm">
@@ -284,9 +284,9 @@ export default function SchemaBuilder() {
                       onChange={(e) =>
                         updateField(index, { unique: e.target.checked })
                       }
-                      className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                      className="rounded border-input text-primary focus:ring-accent"
                     />
-                    <span className="text-gray-700">Unique</span>
+                    <span className="text-foreground">Unique</span>
                   </label>
 
                   {field.type === "number" && (
@@ -302,7 +302,7 @@ export default function SchemaBuilder() {
                               : undefined,
                           })
                         }
-                        className="w-20 px-2 py-1 text-sm border border-gray-300 rounded"
+                        className="w-20 px-2 py-1 text-sm border border-input rounded"
                       />
                       <input
                         type="number"
@@ -315,7 +315,7 @@ export default function SchemaBuilder() {
                               : undefined,
                           })
                         }
-                        className="w-20 px-2 py-1 text-sm border border-gray-300 rounded"
+                        className="w-20 px-2 py-1 text-sm border border-input rounded"
                       />
                     </>
                   )}
@@ -337,7 +337,7 @@ export default function SchemaBuilder() {
                       updateField(index, { helpText: e.target.value })
                     }
                     placeholder="Help text (optional)"
-                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    className="w-full px-3 py-2 text-sm border border-input rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent"
                   />
                 )}
               </div>
@@ -350,13 +350,13 @@ export default function SchemaBuilder() {
           <button
             type="button"
             onClick={() => router.back()}
-            className="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+            className="px-6 py-2 border border-input rounded-lg hover:bg-muted"
           >
             Cancel
           </button>
           <button
             type="submit"
-            className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+            className="px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary/90"
           >
             Create Model
           </button>

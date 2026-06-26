@@ -30,32 +30,32 @@ export default function AdminDashboard() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
-        <p className="mt-2 text-gray-600">
+        <h1 className="text-3xl font-bold text-foreground">Admin Dashboard</h1>
+        <p className="mt-2 text-muted-foreground">
           Manage your application models and data
         </p>
       </div>
 
       {/* Quick Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-          <div className="text-sm font-medium text-gray-600">Total Models</div>
-          <div className="mt-2 text-3xl font-bold text-gray-900">
+        <div className="bg-card p-6 rounded-lg shadow-sm border border-border">
+          <div className="text-sm font-medium text-muted-foreground">Total Models</div>
+          <div className="mt-2 text-3xl font-bold text-foreground">
             {models.length}
           </div>
         </div>
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-          <div className="text-sm font-medium text-gray-600">Total Records</div>
-          <div className="mt-2 text-3xl font-bold text-gray-900">
+        <div className="bg-card p-6 rounded-lg shadow-sm border border-border">
+          <div className="text-sm font-medium text-muted-foreground">Total Records</div>
+          <div className="mt-2 text-3xl font-bold text-foreground">
             {Object.values(stats).reduce((sum, s) => sum + s.totalRecords, 0)}
           </div>
         </div>
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-          <div className="text-sm font-medium text-gray-600">Quick Actions</div>
+        <div className="bg-card p-6 rounded-lg shadow-sm border border-border">
+          <div className="text-sm font-medium text-muted-foreground">Quick Actions</div>
           <div className="mt-4 space-y-2">
             <Link
               href="/admin/schema"
-              className="block text-sm text-indigo-600 hover:text-indigo-800"
+              className="block text-sm text-primary hover:text-primary"
             >
               + Create New Model
             </Link>
@@ -64,19 +64,19 @@ export default function AdminDashboard() {
       </div>
 
       {/* Models List */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <h2 className="text-xl font-semibold text-gray-900">Your Models</h2>
+      <div className="bg-card rounded-lg shadow-sm border border-border">
+        <div className="px-6 py-4 border-b border-border">
+          <h2 className="text-xl font-semibold text-foreground">Your Models</h2>
         </div>
-        <div className="divide-y divide-gray-200">
+        <div className="divide-y divide-border">
           {models.length === 0 ? (
             <div className="px-6 py-12 text-center">
-              <p className="text-gray-500">
+              <p className="text-muted-foreground">
                 No models yet. Create your first model to get started.
               </p>
               <Link
                 href="/admin/schema"
-                className="mt-4 inline-block px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+                className="mt-4 inline-block px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90"
               >
                 Create Model
               </Link>
@@ -88,7 +88,7 @@ export default function AdminDashboard() {
                 lastUpdated: null,
               };
               return (
-                <div key={model.id} className="px-6 py-4 hover:bg-gray-50">
+                <div key={model.id} className="px-6 py-4 hover:bg-muted">
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
                       <div className="flex items-center gap-3">
@@ -96,16 +96,16 @@ export default function AdminDashboard() {
                         <div>
                           <Link
                             href={`/admin/models/${model.id}`}
-                            className="text-lg font-medium text-gray-900 hover:text-indigo-600"
+                            className="text-lg font-medium text-foreground hover:text-primary"
                           >
                             {model.label}
                           </Link>
-                          <p className="text-sm text-gray-500">
+                          <p className="text-sm text-muted-foreground">
                             {model.description || "No description"}
                           </p>
                         </div>
                       </div>
-                      <div className="mt-2 flex items-center gap-4 text-sm text-gray-600">
+                      <div className="mt-2 flex items-center gap-4 text-sm text-muted-foreground">
                         <span>{model.fields.length} fields</span>
                         <span>•</span>
                         <span>{modelStats.totalRecords} records</span>
@@ -125,13 +125,13 @@ export default function AdminDashboard() {
                     <div className="flex items-center gap-2">
                       <Link
                         href={`/admin/models/${model.id}/create`}
-                        className="px-4 py-2 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+                        className="px-4 py-2 text-sm bg-primary text-white rounded-lg hover:bg-primary/90"
                       >
                         + Add Record
                       </Link>
                       <Link
                         href={`/admin/models/${model.id}`}
-                        className="px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50"
+                        className="px-4 py-2 text-sm border border-input rounded-lg hover:bg-muted"
                       >
                         View All
                       </Link>

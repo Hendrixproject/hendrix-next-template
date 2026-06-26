@@ -83,8 +83,8 @@ export default function EditRecordPage() {
     const value = formData[field.name];
     const error = errors[field.name];
 
-    const baseClasses = `w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent ${
-      error ? "border-red-500" : "border-gray-300"
+    const baseClasses = `w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent ${
+      error ? "border-red-500" : "border-input"
     }`;
 
     switch (field.type) {
@@ -124,9 +124,9 @@ export default function EditRecordPage() {
               type="checkbox"
               checked={value || false}
               onChange={(e) => handleChange(field, e.target.checked)}
-              className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+              className="rounded border-input text-primary focus:ring-accent"
             />
-            <span className="text-sm text-gray-700">
+            <span className="text-sm text-foreground">
               {field.helpText || "Yes/No"}
             </span>
           </label>
@@ -216,22 +216,22 @@ export default function EditRecordPage() {
       <div>
         <div className="flex items-center gap-3">
           <span className="text-3xl">{model.icon}</span>
-          <h1 className="text-3xl font-bold text-gray-900">
+          <h1 className="text-3xl font-bold text-foreground">
             Edit {model.label}
           </h1>
         </div>
-        <p className="mt-2 text-sm text-gray-500">
+        <p className="mt-2 text-sm text-muted-foreground">
           Last updated: {new Date(record.updatedAt).toLocaleString()}
         </p>
       </div>
 
       <form
         onSubmit={handleSubmit}
-        className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 space-y-6"
+        className="bg-card rounded-lg shadow-sm border border-border p-6 space-y-6"
       >
         {model.fields.map((field) => (
           <div key={field.name}>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-foreground mb-1">
               {field.label}
               {field.required && <span className="text-red-500 ml-1">*</span>}
             </label>
@@ -240,22 +240,22 @@ export default function EditRecordPage() {
               <p className="mt-1 text-sm text-red-600">{errors[field.name]}</p>
             )}
             {field.helpText && !errors[field.name] && (
-              <p className="mt-1 text-sm text-gray-500">{field.helpText}</p>
+              <p className="mt-1 text-sm text-muted-foreground">{field.helpText}</p>
             )}
           </div>
         ))}
 
-        <div className="flex items-center justify-end gap-4 pt-4 border-t border-gray-200">
+        <div className="flex items-center justify-end gap-4 pt-4 border-t border-border">
           <button
             type="button"
             onClick={() => router.back()}
-            className="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+            className="px-6 py-2 border border-input rounded-lg hover:bg-muted"
           >
             Cancel
           </button>
           <button
             type="submit"
-            className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+            className="px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary/90"
           >
             Save Changes
           </button>

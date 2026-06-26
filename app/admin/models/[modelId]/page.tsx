@@ -94,15 +94,15 @@ export default function ModelListPage() {
         <div>
           <div className="flex items-center gap-3">
             <span className="text-3xl">{model.icon}</span>
-            <h1 className="text-3xl font-bold text-gray-900">
+            <h1 className="text-3xl font-bold text-foreground">
               {model.pluralLabel}
             </h1>
           </div>
-          <p className="mt-2 text-gray-600">{model.description}</p>
+          <p className="mt-2 text-muted-foreground">{model.description}</p>
         </div>
         <Link
           href={`/admin/models/${modelId}/create`}
-          className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+          className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90"
         >
           + Add {model.label}
         </Link>
@@ -115,7 +115,7 @@ export default function ModelListPage() {
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           placeholder="Search records..."
-          className="flex-1 max-w-md px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+          className="flex-1 max-w-md px-4 py-2 border border-input rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent"
         />
         {selectedRecords.size > 0 && (
           <button
@@ -128,69 +128,69 @@ export default function ModelListPage() {
       </div>
 
       {/* Stats */}
-      <div className="text-sm text-gray-600">
+      <div className="text-sm text-muted-foreground">
         Showing {filteredRecords.length} of {total} records
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+      <div className="bg-card rounded-lg shadow-sm border border-border overflow-hidden">
         {filteredRecords.length === 0 ? (
           <div className="px-6 py-12 text-center">
-            <p className="text-gray-500">No records found.</p>
+            <p className="text-muted-foreground">No records found.</p>
             <Link
               href={`/admin/models/${modelId}/create`}
-              className="mt-4 inline-block px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+              className="mt-4 inline-block px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90"
             >
               Create First Record
             </Link>
           </div>
         ) : (
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+          <table className="min-w-full divide-y divide-border">
+            <thead className="bg-muted">
               <tr>
                 <th className="w-12 px-6 py-3">
                   <input
                     type="checkbox"
                     checked={selectedRecords.size === records.length}
                     onChange={toggleSelectAll}
-                    className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                    className="rounded border-input text-primary focus:ring-accent"
                   />
                 </th>
                 {displayFields.map((field) => (
                   <th
                     key={field.name}
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider"
                   >
                     {field.label}
                   </th>
                 ))}
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   Actions
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="bg-card divide-y divide-border">
               {filteredRecords.map((record) => (
-                <tr key={record.id} className="hover:bg-gray-50">
+                <tr key={record.id} className="hover:bg-muted">
                   <td className="px-6 py-4">
                     <input
                       type="checkbox"
                       checked={selectedRecords.has(record.id)}
                       onChange={() => toggleSelect(record.id)}
-                      className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                      className="rounded border-input text-primary focus:ring-accent"
                     />
                   </td>
                   {displayFields.map((field) => (
                     <td
                       key={field.name}
-                      className="px-6 py-4 whitespace-nowrap text-sm text-gray-900"
+                      className="px-6 py-4 whitespace-nowrap text-sm text-foreground"
                     >
                       {field.type === "boolean" ? (
                         <span
                           className={
                             record.data[field.name]
                               ? "text-green-600"
-                              : "text-gray-400"
+                              : "text-muted-foreground"
                           }
                         >
                           {record.data[field.name] ? "✓" : "✗"}
@@ -210,7 +210,7 @@ export default function ModelListPage() {
                     <div className="flex items-center justify-end gap-2">
                       <Link
                         href={`/admin/models/${modelId}/${record.id}`}
-                        className="text-indigo-600 hover:text-indigo-900"
+                        className="text-primary hover:text-primary"
                       >
                         View
                       </Link>
