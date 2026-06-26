@@ -20,8 +20,9 @@ export default function CreateRecordPage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    if (modelId) {
-      const m = schemaManager.getModel(modelId);
+    if (!modelId) return;
+    (async () => {
+      const m = await schemaManager.getModel(modelId);
       if (!m) {
         router.push("/admin");
         return;
@@ -38,7 +39,7 @@ export default function CreateRecordPage() {
         }
       });
       setFormData(initialData);
-    }
+    })();
   }, [modelId]);
 
   const handleChange = (field: FieldDefinition, value: any) => {
@@ -54,7 +55,7 @@ export default function CreateRecordPage() {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!model) return;
@@ -77,7 +78,7 @@ export default function CreateRecordPage() {
     }
 
     try {
-      recordManager.createRecord(modelId, formData);
+      await recordManager.createRecord(modelId, formData);
       router.push(`/admin/models/${modelId}`);
     } catch (error) {
       alert("Error creating record: " + (error as Error).message);

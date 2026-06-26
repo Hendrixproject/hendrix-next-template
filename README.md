@@ -24,6 +24,11 @@ This template equips you with a foundational Next.js application integrated with
 
 ## Getting Started
 
+Hendrix follows a Django-like workflow: **iterate on your data model in a
+personal dev backend, then deploy to production**. The dev backend is a real
+(per-developer, isolated) cloud sandbox, so it has full parity with prod — same
+schema, same data client, same auth rules. No "works locally, breaks in prod."
+
 1. **Install dependencies:**
 
    ```bash
@@ -51,6 +56,14 @@ This template equips you with a foundational Next.js application integrated with
 4. **Open your browser:**
    Navigate to [http://localhost:3000](http://localhost:3000)
 
+### Local → AWS
+
+- **Develop:** edit models in `amplify/data/resource.ts` (or via the admin's
+  Schema Builder for dynamic models). Your sandbox applies changes in seconds.
+- **Deploy:** push to `main`. Amplify ships the *same* schema to the production
+  backend via CI/CD. Sandbox and prod are separate environments (separate data,
+  separate Cognito pools) — by design.
+
 ## Admin Interface
 
 This template includes a powerful Django-like admin interface, **gated behind
@@ -69,13 +82,12 @@ Cognito authentication**.
   ```
 
   (Find `<userPoolId>` in `amplify_outputs.json` under `auth.user_pool_id`.)
+- **Persistence**: models and records are stored in **DynamoDB** (the
+  `AdminModel` / `AdminRecord` models in `amplify/data/resource.ts`), scoped per
+  signed-in user via owner auth — not in the browser. Visit `/admin/setup` to
+  seed example data.
 - **Features**: Dynamic model creation, full CRUD operations, multiple field types, validation, search & filtering
 - **Documentation**: See [ADMIN_COMPLETE.md](ADMIN_COMPLETE.md) for detailed usage guide
-
-> **Note:** The admin currently persists data to browser `localStorage` (see
-> [ADMIN_COMPLETE.md](ADMIN_COMPLETE.md) → "Migration to Production"). The auth
-> gate and Amplify wiring are in place; moving the data layer onto the Amplify
-> backend is the recommended next step for a real deployment.
 
 Quick start:
 

@@ -26,30 +26,30 @@ export default function ModelListPage() {
     }
   }, [modelId]);
 
-  const loadData = () => {
-    const m = schemaManager.getModel(modelId);
+  const loadData = async () => {
+    const m = await schemaManager.getModel(modelId);
     if (!m) {
       router.push("/admin");
       return;
     }
     setModel(m);
 
-    const { records: r, total: t } = recordManager.getRecords(modelId);
+    const { records: r, total: t } = await recordManager.getRecords(modelId);
     setRecords(r);
     setTotal(t);
   };
 
-  const handleDelete = (recordId: string) => {
+  const handleDelete = async (recordId: string) => {
     if (confirm("Are you sure you want to delete this record?")) {
-      recordManager.deleteRecord(modelId, recordId);
+      await recordManager.deleteRecord(modelId, recordId);
       loadData();
     }
   };
 
-  const handleBulkDelete = () => {
+  const handleBulkDelete = async () => {
     if (selectedRecords.size === 0) return;
     if (confirm(`Delete ${selectedRecords.size} selected records?`)) {
-      recordManager.bulkDelete(modelId, Array.from(selectedRecords));
+      await recordManager.bulkDelete(modelId, Array.from(selectedRecords));
       setSelectedRecords(new Set());
       loadData();
     }

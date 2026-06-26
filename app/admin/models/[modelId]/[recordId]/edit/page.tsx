@@ -23,9 +23,12 @@ export default function EditRecordPage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    if (modelId && recordId) {
-      const m = schemaManager.getModel(modelId);
-      const r = recordManager.getRecord(modelId, recordId);
+    if (!modelId || !recordId) return;
+    (async () => {
+      const [m, r] = await Promise.all([
+        schemaManager.getModel(modelId),
+        recordManager.getRecord(modelId, recordId),
+      ]);
 
       if (!m || !r) {
         router.push("/admin");
@@ -35,7 +38,7 @@ export default function EditRecordPage() {
       setModel(m);
       setRecord(r);
       setFormData(r.data);
-    }
+    })();
   }, [modelId, recordId]);
 
   const handleChange = (field: FieldDefinition, value: any) => {
@@ -50,7 +53,7 @@ export default function EditRecordPage() {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!model) return;
@@ -72,7 +75,7 @@ export default function EditRecordPage() {
     }
 
     try {
-      recordManager.updateRecord(modelId, recordId, formData);
+      await recordManager.updateRecord(modelId, recordId, formData);
       router.push(`/admin/models/${modelId}`);
     } catch (error) {
       alert("Error updating record: " + (error as Error).message);

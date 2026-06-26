@@ -3,32 +3,47 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { seedAdminData, clearAdminData } from "@/lib/admin/seed";
+import { schemaManager } from "@/lib/admin/schema-manager";
 
 export default function AdminSetup() {
   const [seeded, setSeeded] = useState(false);
+  const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    // Check if data exists
-    if (typeof window !== "undefined") {
-      const hasData = localStorage.getItem("admin_models");
-      setSeeded(!!hasData);
-    }
+    // Check if data exists in the backend
+    schemaManager
+      .getAllModels()
+      .then((models) => setSeeded(models.length > 0))
+      .catch(() => setSeeded(false));
   }, []);
 
-  const handleSeed = () => {
-    seedAdminData();
-    setSeeded(true);
-    window.location.href = "/admin";
+  const handleSeed = async () => {
+    setBusy(true);
+    try {
+      await seedAdminData();
+      setSeeded(true);
+      window.location.href = "/admin";
+    } catch (error) {
+      alert("Error seeding data: " + (error as Error).message);
+      setBusy(false);
+    }
   };
 
-  const handleClear = () => {
+  const handleClear = async () => {
     if (
       confirm(
         "Are you sure you want to clear all admin data? This cannot be undone."
       )
     ) {
-      clearAdminData();
-      setSeeded(false);
+      setBusy(true);
+      try {
+        await clearAdminData();
+        setSeeded(false);
+      } catch (error) {
+        alert("Error clearing data: " + (error as Error).message);
+      } finally {
+        setBusy(false);
+      }
     }
   };
 
@@ -82,9 +97,10 @@ export default function AdminSetup() {
             <div className="space-y-3">
               <button
                 onClick={handleSeed}
-                className="w-full px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 font-medium transition-colors"
+                disabled={busy}
+                className="w-full px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 font-medium transition-colors disabled:opacity-50"
               >
-                🚀 Seed Example Data & Start
+                {busy ? "Seeding…" : "🚀 Seed Example Data & Start"}
               </button>
               <p className="text-sm text-muted-foreground text-center">
                 This will create 3 example models (Products, Customers, Blog
@@ -109,9 +125,10 @@ export default function AdminSetup() {
               </Link>
               <button
                 onClick={handleClear}
-                className="w-full px-6 py-3 bg-red-50 text-red-600 border border-red-200 rounded-lg hover:bg-red-100 font-medium transition-colors"
+                disabled={busy}
+                className="w-full px-6 py-3 bg-red-50 text-red-600 border border-red-200 rounded-lg hover:bg-red-100 font-medium transition-colors disabled:opacity-50"
               >
-                Clear All Data
+                {busy ? "Clearing…" : "Clear All Data"}
               </button>
             </div>
           )}

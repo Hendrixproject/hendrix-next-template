@@ -16,15 +16,17 @@ export default function AdminDashboard() {
     loadData();
   }, []);
 
-  const loadData = () => {
-    const allModels = schemaManager.getAllModels();
+  const loadData = async () => {
+    const allModels = await schemaManager.getAllModels();
     setModels(allModels);
 
-    const newStats: Record<string, any> = {};
-    allModels.forEach((model) => {
-      newStats[model.id] = recordManager.getModelStats(model.id);
-    });
-    setStats(newStats);
+    const entries = await Promise.all(
+      allModels.map(
+        async (model) =>
+          [model.id, await recordManager.getModelStats(model.id)] as const,
+      ),
+    );
+    setStats(Object.fromEntries(entries));
   };
 
   return (

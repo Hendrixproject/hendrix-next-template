@@ -70,11 +70,11 @@ export default function SchemaBuilder() {
     setFields(fields.filter((_, i) => i !== index));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     try {
-      const model = schemaManager.createModel({
+      const model = await schemaManager.createModel({
         name: modelName.toLowerCase().replace(/\s+/g, "_"),
         label: modelLabel,
         pluralLabel: pluralLabel || modelLabel + "s",

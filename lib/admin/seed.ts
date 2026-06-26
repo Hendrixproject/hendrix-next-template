@@ -7,16 +7,16 @@ import { recordManager } from "@/lib/admin/record-manager";
  * Seed the admin system with example models and data
  * This is for demonstration purposes
  */
-export function seedAdminData() {
+export async function seedAdminData() {
   // Check if already seeded
-  const existingModels = schemaManager.getAllModels();
+  const existingModels = await schemaManager.getAllModels();
   if (existingModels.length > 0) {
     console.log("Data already seeded");
     return;
   }
 
   // Create Product model
-  const productModel = schemaManager.createModel({
+  const productModel = await schemaManager.createModel({
     name: "product",
     label: "Product",
     pluralLabel: "Products",
@@ -40,7 +40,7 @@ export function seedAdminData() {
   });
 
   // Create Customer model
-  const customerModel = schemaManager.createModel({
+  const customerModel = await schemaManager.createModel({
     name: "customer",
     label: "Customer",
     pluralLabel: "Customers",
@@ -69,7 +69,7 @@ export function seedAdminData() {
   });
 
   // Create Blog Post model
-  const blogModel = schemaManager.createModel({
+  const blogModel = await schemaManager.createModel({
     name: "blog_post",
     label: "Blog Post",
     pluralLabel: "Blog Posts",
@@ -98,7 +98,7 @@ export function seedAdminData() {
   });
 
   // Seed some products
-  recordManager.createRecord(productModel.id, {
+  await recordManager.createRecord(productModel.id, {
     name: "Wireless Headphones",
     description:
       "Premium noise-canceling wireless headphones with 30-hour battery life",
@@ -108,7 +108,7 @@ export function seedAdminData() {
     website: "https://example.com/headphones",
   });
 
-  recordManager.createRecord(productModel.id, {
+  await recordManager.createRecord(productModel.id, {
     name: "Smart Watch",
     description: "Fitness tracking smartwatch with heart rate monitor",
     price: 399.99,
@@ -117,7 +117,7 @@ export function seedAdminData() {
     website: "https://example.com/smartwatch",
   });
 
-  recordManager.createRecord(productModel.id, {
+  await recordManager.createRecord(productModel.id, {
     name: "Laptop Stand",
     description: "Ergonomic aluminum laptop stand",
     price: 49.99,
@@ -127,7 +127,7 @@ export function seedAdminData() {
   });
 
   // Seed some customers
-  recordManager.createRecord(customerModel.id, {
+  await recordManager.createRecord(customerModel.id, {
     name: "John Doe",
     email: "john.doe@example.com",
     phone: "+1-555-0101",
@@ -136,7 +136,7 @@ export function seedAdminData() {
     notes: "VIP customer",
   });
 
-  recordManager.createRecord(customerModel.id, {
+  await recordManager.createRecord(customerModel.id, {
     name: "Jane Smith",
     email: "jane.smith@example.com",
     phone: "+1-555-0102",
@@ -146,7 +146,7 @@ export function seedAdminData() {
   });
 
   // Seed a blog post
-  recordManager.createRecord(blogModel.id, {
+  await recordManager.createRecord(blogModel.id, {
     title: "Welcome to Our New Admin Interface",
     slug: "welcome-admin-interface",
     content:
@@ -163,10 +163,15 @@ export function seedAdminData() {
   );
 }
 
-export function clearAdminData() {
-  if (typeof window !== "undefined") {
-    localStorage.removeItem("admin_models");
-    localStorage.removeItem("admin_records");
-    console.log("✅ Admin data cleared!");
+export async function clearAdminData() {
+  const models = await schemaManager.getAllModels();
+  for (const model of models) {
+    const { records } = await recordManager.getRecords(model.id);
+    await recordManager.bulkDelete(
+      model.id,
+      records.map((r) => r.id),
+    );
+    await schemaManager.deleteModel(model.id);
   }
+  console.log("✅ Admin data cleared!");
 }

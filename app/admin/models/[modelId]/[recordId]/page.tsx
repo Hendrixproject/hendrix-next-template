@@ -17,9 +17,12 @@ export default function ViewRecordPage() {
   const [record, setRecord] = useState<ModelRecord | null>(null);
 
   useEffect(() => {
-    if (modelId && recordId) {
-      const m = schemaManager.getModel(modelId);
-      const r = recordManager.getRecord(modelId, recordId);
+    if (!modelId || !recordId) return;
+    (async () => {
+      const [m, r] = await Promise.all([
+        schemaManager.getModel(modelId),
+        recordManager.getRecord(modelId, recordId),
+      ]);
 
       if (!m || !r) {
         router.push("/admin");
@@ -28,12 +31,12 @@ export default function ViewRecordPage() {
 
       setModel(m);
       setRecord(r);
-    }
+    })();
   }, [modelId, recordId]);
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (confirm("Are you sure you want to delete this record?")) {
-      recordManager.deleteRecord(modelId, recordId);
+      await recordManager.deleteRecord(modelId, recordId);
       router.push(`/admin/models/${modelId}`);
     }
   };

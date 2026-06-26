@@ -1,231 +1,156 @@
+import { generateClient } from "aws-amplify/data";
+import type { Schema } from "@/amplify/data/resource";
 import { ModelRecord, RecordData } from "./types";
 import { schemaManager } from "./schema-manager";
 
 /**
- * Record Manager - Handles CRUD operations for model records
- * In production, this would use a real database
+ * Record Manager — persists model records to the Amplify backend (AdminRecord
+ * in DynamoDB), replacing localStorage. Records are listed by `modelId` via a
+ * secondary index, then filtered/sorted/paginated client-side (data is JSON).
+ *
+ * Rows are owner-scoped by Amplify auth — each admin sees only their own data.
  */
+const client = generateClient<Schema>();
+
+function toRecord(row: Schema["AdminRecord"]["type"]): ModelRecord {
+  return {
+    id: row.id,
+    modelId: row.modelId,
+    data: (row.data as RecordData) ?? {},
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+  };
+}
+
 class RecordManager {
-  private records: Map<string, ModelRecord[]> = new Map();
-  private storageKey = "admin_records";
-
-  constructor() {
-    this.loadFromStorage();
-  }
-
-  private loadFromStorage() {
-    if (typeof window !== "undefined") {
-      const stored = localStorage.getItem(this.storageKey);
-      if (stored) {
-        try {
-          const recordsArray = JSON.parse(stored);
-          recordsArray.forEach(
-            (item: { modelId: string; records: ModelRecord[] }) => {
-              this.records.set(item.modelId, item.records);
-            }
-          );
-        } catch (e) {
-          console.error("Failed to load records from storage", e);
-        }
-      }
-    }
-  }
-
-  private saveToStorage() {
-    if (typeof window !== "undefined") {
-      const recordsArray = Array.from(this.records.entries()).map(
-        ([modelId, records]) => ({
-          modelId,
-          records,
-        })
-      );
-      localStorage.setItem(this.storageKey, JSON.stringify(recordsArray));
-    }
-  }
-
-  createRecord(modelId: string, data: RecordData): ModelRecord {
-    const model = schemaManager.getModel(modelId);
-    if (!model) {
-      throw new Error(`Model ${modelId} not found`);
-    }
-
-    // Validate data
-    this.validateRecord(modelId, data);
-
-    const record: ModelRecord = {
-      id: this.generateId(),
+  async createRecord(modelId: string, data: RecordData): Promise<ModelRecord> {
+    await this.validateRecord(modelId, data);
+    const { data: row, errors } = await client.models.AdminRecord.create({
       modelId,
       data,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-
-    const modelRecords = this.records.get(modelId) || [];
-    modelRecords.push(record);
-    this.records.set(modelId, modelRecords);
-    this.saveToStorage();
-
-    return record;
+    });
+    if (errors?.length || !row) {
+      throw new Error(
+        `Failed to create record: ${errors?.map((e) => e.message).join(", ") ?? "unknown"}`,
+      );
+    }
+    return toRecord(row);
   }
 
-  updateRecord(
+  async updateRecord(
     modelId: string,
     recordId: string,
-    data: RecordData
-  ): ModelRecord | null {
-    const modelRecords = this.records.get(modelId);
-    if (!modelRecords) return null;
-
-    const recordIndex = modelRecords.findIndex((r) => r.id === recordId);
-    if (recordIndex === -1) return null;
-
-    // Validate data
-    this.validateRecord(modelId, data);
-
-    const updatedRecord: ModelRecord = {
-      ...modelRecords[recordIndex],
-      data: { ...modelRecords[recordIndex].data, ...data },
-      updatedAt: new Date().toISOString(),
-    };
-
-    modelRecords[recordIndex] = updatedRecord;
-    this.records.set(modelId, modelRecords);
-    this.saveToStorage();
-
-    return updatedRecord;
+    data: RecordData,
+  ): Promise<ModelRecord | null> {
+    await this.validateRecord(modelId, data);
+    const existing = await client.models.AdminRecord.get({ id: recordId });
+    const merged = { ...((existing.data?.data as RecordData) ?? {}), ...data };
+    const { data: row, errors } = await client.models.AdminRecord.update({
+      id: recordId,
+      data: merged,
+    });
+    if (errors?.length) {
+      throw new Error(`Failed to update record: ${errors.map((e) => e.message).join(", ")}`);
+    }
+    return row ? toRecord(row) : null;
   }
 
-  deleteRecord(modelId: string, recordId: string): boolean {
-    const modelRecords = this.records.get(modelId);
-    if (!modelRecords) return false;
-
-    const filteredRecords = modelRecords.filter((r) => r.id !== recordId);
-    if (filteredRecords.length === modelRecords.length) return false;
-
-    this.records.set(modelId, filteredRecords);
-    this.saveToStorage();
+  async deleteRecord(modelId: string, recordId: string): Promise<boolean> {
+    const { errors } = await client.models.AdminRecord.delete({ id: recordId });
+    if (errors?.length) {
+      throw new Error(`Failed to delete record: ${errors.map((e) => e.message).join(", ")}`);
+    }
     return true;
   }
 
-  getRecord(modelId: string, recordId: string): ModelRecord | null {
-    const modelRecords = this.records.get(modelId);
-    if (!modelRecords) return null;
-
-    return modelRecords.find((r) => r.id === recordId) || null;
+  async getRecord(modelId: string, recordId: string): Promise<ModelRecord | null> {
+    const { data } = await client.models.AdminRecord.get({ id: recordId });
+    return data ? toRecord(data) : null;
   }
 
-  getRecords(
+  /** List a model's records via the modelId index, then filter/sort/paginate. */
+  async getRecords(
     modelId: string,
     options?: {
       limit?: number;
       offset?: number;
       orderBy?: string;
       order?: "asc" | "desc";
-      filter?: Record<string, any>;
+      filter?: Record<string, unknown>;
+    },
+  ): Promise<{ records: ModelRecord[]; total: number }> {
+    const { data, errors } = await client.models.AdminRecord.listAdminRecordByModelId(
+      { modelId },
+    );
+    if (errors?.length) {
+      throw new Error(`Failed to list records: ${errors.map((e) => e.message).join(", ")}`);
     }
-  ): { records: ModelRecord[]; total: number } {
-    let modelRecords = this.records.get(modelId) || [];
-    const total = modelRecords.length;
+    let records = (data ?? []).map(toRecord);
+    const total = records.length;
 
-    // Apply filters
     if (options?.filter) {
-      modelRecords = modelRecords.filter((record) => {
-        return Object.entries(options.filter!).every(([key, value]) => {
-          const recordValue = record.data[key];
-          if (typeof value === "string" && typeof recordValue === "string") {
-            return recordValue.toLowerCase().includes(value.toLowerCase());
+      records = records.filter((record) =>
+        Object.entries(options.filter!).every(([key, value]) => {
+          const rv = record.data[key];
+          if (typeof value === "string" && typeof rv === "string") {
+            return rv.toLowerCase().includes(value.toLowerCase());
           }
-          return recordValue === value;
-        });
-      });
+          return rv === value;
+        }),
+      );
     }
 
-    // Apply sorting
     if (options?.orderBy) {
       const orderBy = options.orderBy;
-      const order = options.order || "asc";
-      modelRecords.sort((a, b) => {
-        const aVal = a.data[orderBy];
-        const bVal = b.data[orderBy];
-        if (aVal < bVal) return order === "asc" ? -1 : 1;
-        if (aVal > bVal) return order === "asc" ? 1 : -1;
+      const dir = options.order === "desc" ? -1 : 1;
+      records.sort((a, b) => {
+        const av = a.data[orderBy];
+        const bv = b.data[orderBy];
+        if (av < bv) return -1 * dir;
+        if (av > bv) return 1 * dir;
         return 0;
       });
     }
 
-    // Apply pagination
-    if (options?.offset !== undefined) {
-      modelRecords = modelRecords.slice(options.offset);
-    }
-    if (options?.limit !== undefined) {
-      modelRecords = modelRecords.slice(0, options.limit);
-    }
+    if (options?.offset !== undefined) records = records.slice(options.offset);
+    if (options?.limit !== undefined) records = records.slice(0, options.limit);
 
-    return { records: modelRecords, total };
+    return { records, total };
   }
 
-  bulkDelete(modelId: string, recordIds: string[]): number {
-    const modelRecords = this.records.get(modelId);
-    if (!modelRecords) return 0;
-
-    const initialCount = modelRecords.length;
-    const filteredRecords = modelRecords.filter(
-      (r) => !recordIds.includes(r.id)
+  async bulkDelete(modelId: string, recordIds: string[]): Promise<number> {
+    const results = await Promise.all(
+      recordIds.map((id) => client.models.AdminRecord.delete({ id })),
     );
-    const deletedCount = initialCount - filteredRecords.length;
-
-    if (deletedCount > 0) {
-      this.records.set(modelId, filteredRecords);
-      this.saveToStorage();
-    }
-
-    return deletedCount;
+    return results.filter((r) => !r.errors?.length).length;
   }
 
-  private validateRecord(modelId: string, data: RecordData): void {
-    const model = schemaManager.getModel(modelId);
-    if (!model) {
-      throw new Error(`Model ${modelId} not found`);
-    }
-
-    const errors: string[] = [];
-
-    model.fields.forEach((field) => {
-      const value = data[field.name];
-      const validation = schemaManager.validateField(field, value);
-
-      if (!validation.valid) {
-        errors.push(validation.error!);
-      }
-    });
-
-    if (errors.length > 0) {
-      throw new Error(`Validation failed: ${errors.join(", ")}`);
-    }
-  }
-
-  private generateId(): string {
-    return `record_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-  }
-
-  // Get statistics
-  getModelStats(modelId: string): {
-    totalRecords: number;
-    lastUpdated: string | null;
-  } {
-    const records = this.records.get(modelId) || [];
+  async getModelStats(
+    modelId: string,
+  ): Promise<{ totalRecords: number; lastUpdated: string | null }> {
+    const { records } = await this.getRecords(modelId);
     const lastUpdated =
       records.length > 0
         ? records.reduce(
             (latest, r) => (r.updatedAt > latest ? r.updatedAt : latest),
-            records[0].updatedAt
+            records[0].updatedAt,
           )
         : null;
+    return { totalRecords: records.length, lastUpdated };
+  }
 
-    return {
-      totalRecords: records.length,
-      lastUpdated,
-    };
+  private async validateRecord(modelId: string, data: RecordData): Promise<void> {
+    const model = await schemaManager.getModel(modelId);
+    if (!model) throw new Error(`Model ${modelId} not found`);
+
+    const errors: string[] = [];
+    model.fields.forEach((field) => {
+      const result = schemaManager.validateField(field, data[field.name]);
+      if (!result.valid) errors.push(result.error!);
+    });
+    if (errors.length > 0) {
+      throw new Error(`Validation failed: ${errors.join(", ")}`);
+    }
   }
 }
 

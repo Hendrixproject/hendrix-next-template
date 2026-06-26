@@ -1,169 +1,178 @@
+import { generateClient } from "aws-amplify/data";
+import type { Schema } from "@/amplify/data/resource";
 import { ModelDefinition, FieldDefinition } from "./types";
 
 /**
- * Schema Manager - Handles dynamic model definitions
- * In a production app, this would persist to a database
+ * Schema Manager — persists dynamic model definitions to the Amplify backend
+ * (AdminModel in DynamoDB), replacing the previous localStorage store. Methods
+ * that touch storage are async; validateField stays sync (pure).
+ *
+ * Rows are owner-scoped by Amplify auth, so each signed-in admin only ever
+ * sees their own models.
  */
+const client = generateClient<Schema>();
+
+/** Map a DynamoDB AdminModel row into the UI's ModelDefinition shape. */
+function toModel(row: Schema["AdminModel"]["type"]): ModelDefinition {
+  return {
+    id: row.id,
+    name: row.name,
+    label: row.label,
+    pluralLabel: row.pluralLabel,
+    description: row.description ?? undefined,
+    icon: row.icon ?? undefined,
+    displayField: row.displayField ?? undefined,
+    orderBy: row.orderBy ?? undefined,
+    fields: (row.fields as FieldDefinition[]) ?? [],
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+  };
+}
+
 class SchemaManager {
-  private models: Map<string, ModelDefinition> = new Map();
-  private storageKey = "admin_models";
-
-  constructor() {
-    this.loadFromStorage();
-  }
-
-  private loadFromStorage() {
-    if (typeof window !== "undefined") {
-      const stored = localStorage.getItem(this.storageKey);
-      if (stored) {
-        try {
-          const models = JSON.parse(stored);
-          models.forEach((model: ModelDefinition) => {
-            this.models.set(model.id, model);
-          });
-        } catch (e) {
-          console.error("Failed to load models from storage", e);
-        }
-      }
+  async createModel(
+    model: Omit<ModelDefinition, "id" | "createdAt" | "updatedAt">,
+  ): Promise<ModelDefinition> {
+    const { data, errors } = await client.models.AdminModel.create({
+      name: model.name,
+      label: model.label,
+      pluralLabel: model.pluralLabel,
+      description: model.description,
+      icon: model.icon,
+      displayField: model.displayField,
+      orderBy: model.orderBy,
+      fields: model.fields,
+    });
+    if (errors?.length || !data) {
+      throw new Error(
+        `Failed to create model: ${errors?.map((e) => e.message).join(", ") ?? "unknown"}`,
+      );
     }
+    return toModel(data);
   }
 
-  private saveToStorage() {
-    if (typeof window !== "undefined") {
-      const models = Array.from(this.models.values());
-      localStorage.setItem(this.storageKey, JSON.stringify(models));
-    }
-  }
-
-  createModel(
-    model: Omit<ModelDefinition, "id" | "createdAt" | "updatedAt">
-  ): ModelDefinition {
-    const newModel: ModelDefinition = {
-      ...model,
-      id: this.generateId(),
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-
-    this.models.set(newModel.id, newModel);
-    this.saveToStorage();
-    return newModel;
-  }
-
-  updateModel(
+  async updateModel(
     id: string,
-    updates: Partial<ModelDefinition>
-  ): ModelDefinition | null {
-    const model = this.models.get(id);
-    if (!model) return null;
-
-    const updatedModel = {
-      ...model,
-      ...updates,
-      id: model.id, // Prevent ID change
-      updatedAt: new Date().toISOString(),
-    };
-
-    this.models.set(id, updatedModel);
-    this.saveToStorage();
-    return updatedModel;
-  }
-
-  deleteModel(id: string): boolean {
-    const deleted = this.models.delete(id);
-    if (deleted) {
-      this.saveToStorage();
+    updates: Partial<ModelDefinition>,
+  ): Promise<ModelDefinition | null> {
+    const { data, errors } = await client.models.AdminModel.update({
+      id,
+      ...(updates.name !== undefined && { name: updates.name }),
+      ...(updates.label !== undefined && { label: updates.label }),
+      ...(updates.pluralLabel !== undefined && {
+        pluralLabel: updates.pluralLabel,
+      }),
+      ...(updates.description !== undefined && {
+        description: updates.description,
+      }),
+      ...(updates.icon !== undefined && { icon: updates.icon }),
+      ...(updates.displayField !== undefined && {
+        displayField: updates.displayField,
+      }),
+      ...(updates.orderBy !== undefined && { orderBy: updates.orderBy }),
+      ...(updates.fields !== undefined && { fields: updates.fields }),
+    });
+    if (errors?.length) {
+      throw new Error(`Failed to update model: ${errors.map((e) => e.message).join(", ")}`);
     }
-    return deleted;
+    return data ? toModel(data) : null;
   }
 
-  getModel(id: string): ModelDefinition | null {
-    return this.models.get(id) || null;
+  async deleteModel(id: string): Promise<boolean> {
+    const { errors } = await client.models.AdminModel.delete({ id });
+    if (errors?.length) {
+      throw new Error(`Failed to delete model: ${errors.map((e) => e.message).join(", ")}`);
+    }
+    return true;
   }
 
-  getModelByName(name: string): ModelDefinition | null {
-    return (
-      Array.from(this.models.values()).find((m) => m.name === name) || null
-    );
+  async getModel(id: string): Promise<ModelDefinition | null> {
+    const { data } = await client.models.AdminModel.get({ id });
+    return data ? toModel(data) : null;
   }
 
-  getAllModels(): ModelDefinition[] {
-    return Array.from(this.models.values());
+  async getModelByName(name: string): Promise<ModelDefinition | null> {
+    const all = await this.getAllModels();
+    return all.find((m) => m.name === name) ?? null;
   }
 
-  addField(modelId: string, field: FieldDefinition): ModelDefinition | null {
-    const model = this.models.get(modelId);
+  async getAllModels(): Promise<ModelDefinition[]> {
+    const { data, errors } = await client.models.AdminModel.list();
+    if (errors?.length) {
+      throw new Error(`Failed to list models: ${errors.map((e) => e.message).join(", ")}`);
+    }
+    return (data ?? []).map(toModel);
+  }
+
+  async addField(
+    modelId: string,
+    field: FieldDefinition,
+  ): Promise<ModelDefinition | null> {
+    const model = await this.getModel(modelId);
     if (!model) return null;
-
-    const updatedFields = [...model.fields, field];
-    return this.updateModel(modelId, { fields: updatedFields });
+    return this.updateModel(modelId, { fields: [...model.fields, field] });
   }
 
-  updateField(
+  async updateField(
     modelId: string,
     fieldName: string,
-    updates: Partial<FieldDefinition>
-  ): ModelDefinition | null {
-    const model = this.models.get(modelId);
+    updates: Partial<FieldDefinition>,
+  ): Promise<ModelDefinition | null> {
+    const model = await this.getModel(modelId);
     if (!model) return null;
-
-    const updatedFields = model.fields.map((f) =>
-      f.name === fieldName ? { ...f, ...updates } : f
+    const fields = model.fields.map((f) =>
+      f.name === fieldName ? { ...f, ...updates } : f,
     );
-
-    return this.updateModel(modelId, { fields: updatedFields });
+    return this.updateModel(modelId, { fields });
   }
 
-  deleteField(modelId: string, fieldName: string): ModelDefinition | null {
-    const model = this.models.get(modelId);
+  async deleteField(
+    modelId: string,
+    fieldName: string,
+  ): Promise<ModelDefinition | null> {
+    const model = await this.getModel(modelId);
     if (!model) return null;
-
-    const updatedFields = model.fields.filter((f) => f.name !== fieldName);
-    return this.updateModel(modelId, { fields: updatedFields });
+    const fields = model.fields.filter((f) => f.name !== fieldName);
+    return this.updateModel(modelId, { fields });
   }
 
-  private generateId(): string {
-    return `model_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-  }
-
+  /** Pure, synchronous field validation (no storage access). */
   validateField(
     field: FieldDefinition,
-    value: any
+    value: unknown,
   ): { valid: boolean; error?: string } {
-    if (
-      field.required &&
-      (value === null || value === undefined || value === "")
-    ) {
+    if (field.required && (value === null || value === undefined || value === "")) {
       return { valid: false, error: `${field.label} is required` };
     }
 
     if (field.type === "email" && value) {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(value)) {
+      if (!emailRegex.test(String(value))) {
         return { valid: false, error: "Invalid email format" };
       }
     }
 
     if (field.type === "url" && value) {
       try {
-        new URL(value);
+        new URL(String(value));
       } catch {
         return { valid: false, error: "Invalid URL format" };
       }
     }
 
     if (field.type === "number" && value !== null && value !== undefined) {
-      if (field.min !== undefined && value < field.min) {
+      const num = Number(value);
+      if (field.min !== undefined && num < field.min) {
         return { valid: false, error: `Value must be at least ${field.min}` };
       }
-      if (field.max !== undefined && value > field.max) {
+      if (field.max !== undefined && num > field.max) {
         return { valid: false, error: `Value must be at most ${field.max}` };
       }
     }
 
     if (field.pattern && value) {
       const regex = new RegExp(field.pattern);
-      if (!regex.test(value)) {
+      if (!regex.test(String(value))) {
         return { valid: false, error: `Value doesn't match required pattern` };
       }
     }
@@ -172,5 +181,4 @@ class SchemaManager {
   }
 }
 
-// Singleton instance
 export const schemaManager = new SchemaManager();

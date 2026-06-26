@@ -1,17 +1,44 @@
 import { type ClientSchema, a, defineData } from "@aws-amplify/backend";
 
-/*== STEP 1 ===============================================================
-The section below creates a Todo database table with a "content" field. Try
-adding a new "isDone" field as a boolean. The authorization rule below
-specifies that any user authenticated via an API key can "create", "read",
-"update", and "delete" any "Todo" records.
-=========================================================================*/
+/**
+ * Hendrix admin data model.
+ *
+ * The admin lets you define models at runtime (the Schema Builder), so the
+ * backend stores them generically rather than as a fixed schema:
+ *   - AdminModel  — a model definition (name, label, fields) authored in the UI.
+ *     `fields` is the FieldDefinition[] serialized as JSON.
+ *   - AdminRecord — one row of data for a given model. `data` is the record's
+ *     field values as JSON, keyed by the owning model's id.
+ *
+ * Auth: the admin is gated behind Cognito + the `admins` group, so we default
+ * to userPool auth and scope every row with `owner()` — each admin sees only
+ * their own models and records (real per-user persistence in DynamoDB).
+ */
 const schema = a.schema({
-  Todo: a
+  AdminModel: a
     .model({
-      content: a.string(),
+      name: a.string().required(),
+      label: a.string().required(),
+      pluralLabel: a.string().required(),
+      description: a.string(),
+      icon: a.string(),
+      displayField: a.string(),
+      orderBy: a.string(),
+      // FieldDefinition[] serialized as JSON (dynamic, user-defined shape).
+      fields: a.json().required(),
     })
-    .authorization((allow) => [allow.publicApiKey()]),
+    .authorization((allow) => [allow.owner()]),
+
+  AdminRecord: a
+    .model({
+      // Foreign key to AdminModel.id (string match; not a hard relation so the
+      // generic store stays simple). Indexed for per-model listing.
+      modelId: a.string().required(),
+      // Record field values as JSON, validated client-side against the model.
+      data: a.json().required(),
+    })
+    .authorization((allow) => [allow.owner()])
+    .secondaryIndexes((index) => [index("modelId")]),
 });
 
 export type Schema = ClientSchema<typeof schema>;
@@ -19,38 +46,6 @@ export type Schema = ClientSchema<typeof schema>;
 export const data = defineData({
   schema,
   authorizationModes: {
-    defaultAuthorizationMode: "apiKey",
-    apiKeyAuthorizationMode: {
-      expiresInDays: 30,
-    },
+    defaultAuthorizationMode: "userPool",
   },
 });
-
-/*== STEP 2 ===============================================================
-Go to your frontend source code. From your client-side code, generate a
-Data client to make CRUDL requests to your table. (THIS SNIPPET WILL ONLY
-WORK IN THE FRONTEND CODE FILE.)
-
-Using JavaScript or Next.js React Server Components, Middleware, Server 
-Actions or Pages Router? Review how to generate Data clients for those use
-cases: https://docs.amplify.aws/gen2/build-a-backend/data/connect-to-API/
-=========================================================================*/
-
-/*
-"use client"
-import { generateClient } from "aws-amplify/data";
-import type { Schema } from "@/amplify/data/resource";
-
-const client = generateClient<Schema>() // use this Data client for CRUDL requests
-*/
-
-/*== STEP 3 ===============================================================
-Fetch records from the database and use them in your frontend component.
-(THIS SNIPPET WILL ONLY WORK IN THE FRONTEND CODE FILE.)
-=========================================================================*/
-
-/* For example, in a React component, you can use this snippet in your
-  function's RETURN statement */
-// const { data: todos } = await client.models.Todo.list()
-
-// return <ul>{todos.map(todo => <li key={todo.id}>{todo.content}</li>)}</ul>
