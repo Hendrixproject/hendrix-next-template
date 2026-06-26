@@ -1,4 +1,5 @@
 import { type ClientSchema, a, defineData } from "@aws-amplify/backend";
+import { generateSchema } from "../functions/generate-schema/resource";
 
 /**
  * Hendrix admin data model.
@@ -39,6 +40,16 @@ const schema = a.schema({
     })
     .authorization((allow) => [allow.owner()])
     .secondaryIndexes((index) => [index("modelId")]),
+
+  // Schema-from-prompt: NL app description -> proposed model definitions (JSON
+  // string). Restricted to the admins group; the Lambda calls Claude on Bedrock.
+  // Returns a proposal only — the client previews and persists AdminModel rows.
+  generateSchema: a
+    .mutation()
+    .arguments({ prompt: a.string().required() })
+    .returns(a.string())
+    .authorization((allow) => [allow.group("admins")])
+    .handler(a.handler.function(generateSchema)),
 });
 
 export type Schema = ClientSchema<typeof schema>;

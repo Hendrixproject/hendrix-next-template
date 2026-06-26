@@ -86,8 +86,27 @@ Cognito authentication**.
   `AdminModel` / `AdminRecord` models in `amplify/data/resource.ts`), scoped per
   signed-in user via owner auth — not in the browser. Visit `/admin/setup` to
   seed example data.
+- **AI schema-from-prompt**: in the Schema Builder, describe an app in plain
+  English ("a blog with posts and comments") and Claude (via Amazon Bedrock)
+  proposes models you review before creating. See [AI setup](#ai-schema-from-prompt-setup).
 - **Features**: Dynamic model creation, full CRUD operations, multiple field types, validation, search & filtering
 - **Documentation**: See [ADMIN_COMPLETE.md](ADMIN_COMPLETE.md) for detailed usage guide
+
+### AI schema-from-prompt setup
+
+The `generateSchema` mutation (Lambda in `amplify/functions/generate-schema`)
+calls Claude via Amazon Bedrock, using the **EU inference profile**
+(`eu.anthropic.claude-sonnet-4-5`) for in-region data residency.
+
+**Prerequisite — one-time per AWS account:** enable Anthropic model access in
+Bedrock, or the feature returns *"Model use case details have not been
+submitted for this account."* In the AWS console → **Bedrock → Model access**
+(in your deploy region) request the Claude model and submit the Anthropic
+use-case form. Access is usually granted within minutes.
+
+- Change the model via `BEDROCK_MODEL_ID` in
+  `amplify/functions/generate-schema/resource.ts` (e.g. Haiku for lower cost).
+- Each generation is a paid Bedrock call — see Anthropic-on-Bedrock pricing.
 
 Quick start:
 
