@@ -19,6 +19,8 @@ frontend:
         - nvm use
     build:
       commands:
+        # Run unit tests before building; a failure blocks the deploy.
+        - npm test
         - npm run build
   artifacts:
     baseDirectory: .next
