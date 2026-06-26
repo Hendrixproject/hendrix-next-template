@@ -3,7 +3,19 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { schemaManager } from "@/lib/admin/schema-manager";
+import { client } from "@/lib/client";
 import type { FieldDefinition, FieldType } from "@/lib/admin/types";
+
+/** A model proposed by the AI, before the user confirms creation. */
+interface ProposedModel {
+  name: string;
+  label: string;
+  pluralLabel: string;
+  description?: string;
+  icon?: string;
+  displayField?: string;
+  fields: FieldDefinition[];
+}
 
 const FIELD_TYPES: { value: FieldType; label: string }[] = [
   { value: "string", label: "Text (Short)" },
@@ -47,6 +59,54 @@ export default function SchemaBuilder() {
       required: true,
     },
   ]);
+
+  // --- AI schema-from-prompt ---
+  const [aiPrompt, setAiPrompt] = useState("");
+  const [aiBusy, setAiBusy] = useState(false);
+  const [proposed, setProposed] = useState<ProposedModel[] | null>(null);
+
+  const handleGenerate = async () => {
+    if (!aiPrompt.trim()) return;
+    setAiBusy(true);
+    setProposed(null);
+    try {
+      const { data, errors } = await client.mutations.generateSchema({
+        prompt: aiPrompt,
+      });
+      if (errors?.length || !data) {
+        throw new Error(errors?.map((e) => e.message).join(", ") ?? "No response");
+      }
+      setProposed(JSON.parse(data) as ProposedModel[]);
+    } catch (error) {
+      alert("Generation failed: " + (error as Error).message);
+    } finally {
+      setAiBusy(false);
+    }
+  };
+
+  const handleAcceptProposal = async () => {
+    if (!proposed) return;
+    setAiBusy(true);
+    try {
+      let firstId = "";
+      for (const m of proposed) {
+        const created = await schemaManager.createModel({
+          name: m.name.toLowerCase().replace(/\s+/g, "_"),
+          label: m.label,
+          pluralLabel: m.pluralLabel || m.label + "s",
+          description: m.description,
+          icon: m.icon,
+          fields: m.fields,
+          displayField: m.displayField || m.fields[0]?.name || "name",
+        });
+        if (!firstId) firstId = created.id;
+      }
+      router.push(proposed.length === 1 ? `/admin/models/${firstId}` : "/admin");
+    } catch (error) {
+      alert("Error creating models: " + (error as Error).message);
+      setAiBusy(false);
+    }
+  };
 
   const addField = () => {
     setFields([
@@ -97,6 +157,92 @@ export default function SchemaBuilder() {
         <p className="mt-2 text-muted-foreground">
           Create a new model with custom fields
         </p>
+      </div>
+
+      {/* AI: schema from prompt */}
+      <div className="bg-card rounded-lg shadow-sm border border-border p-6 space-y-4">
+        <div>
+          <h2 className="text-lg font-semibold text-foreground">
+            ✨ Generate from a prompt
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            Describe your app and let Claude propose the models. You can review
+            and tweak before anything is created.
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <input
+            value={aiPrompt}
+            onChange={(e) => setAiPrompt(e.target.value)}
+            placeholder="e.g. a blog with posts and comments"
+            className="flex-1 px-3 py-2 border border-input rounded-lg focus:ring-2 focus:ring-ring focus:border-transparent"
+            onKeyDown={(e) => {
+              if (e.key === "Enter") handleGenerate();
+            }}
+          />
+          <button
+            type="button"
+            onClick={handleGenerate}
+            disabled={aiBusy || !aiPrompt.trim()}
+            className="px-5 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 font-medium transition-colors disabled:opacity-50"
+          >
+            {aiBusy ? "Thinking…" : "Generate"}
+          </button>
+        </div>
+
+        {proposed && (
+          <div className="space-y-3 border-t border-border pt-4">
+            <p className="text-sm font-medium text-foreground">
+              Proposed {proposed.length} model{proposed.length > 1 ? "s" : ""}:
+            </p>
+            {proposed.map((m) => (
+              <div
+                key={m.name}
+                className="rounded-lg border border-border p-4 bg-muted/40"
+              >
+                <div className="font-medium text-foreground">
+                  {m.icon} {m.label}{" "}
+                  <span className="text-muted-foreground font-normal">
+                    ({m.name})
+                  </span>
+                </div>
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {m.fields.map((f) => (
+                    <span
+                      key={f.name}
+                      className="text-xs px-2 py-0.5 rounded bg-card border border-border text-muted-foreground"
+                    >
+                      {f.name}: {f.type}
+                      {f.required ? " *" : ""}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            ))}
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={handleAcceptProposal}
+                disabled={aiBusy}
+                className="px-5 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 font-medium transition-colors disabled:opacity-50"
+              >
+                {aiBusy ? "Creating…" : "Create these models"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setProposed(null)}
+                disabled={aiBusy}
+                className="px-5 py-2 border border-border rounded-lg hover:bg-muted font-medium transition-colors"
+              >
+                Discard
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div className="text-center text-sm text-muted-foreground">
+        — or build one manually —
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
