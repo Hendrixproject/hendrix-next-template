@@ -4,6 +4,8 @@ import { ReactNode, useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
+import { signOut } from "aws-amplify/auth";
+import AdminGate from "./AdminGate";
 import {
   Panel,
   SidePanel,
@@ -55,6 +57,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     pathname === href || pathname?.startsWith(href + "/");
 
   return (
+    <AdminGate>
     <div
       style={{
         minHeight: "100vh",
@@ -122,7 +125,12 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
               onSelect={(isSelected) => toggleTheme(isSelected)}
             />
           </div>
-          <DropMenu>
+          <DropMenu
+            onSelect={(optionIndex) => {
+              // Options below, in order: Profile (0), Settings (1), Sign out (2).
+              if (optionIndex === 2) signOut();
+            }}
+          >
             <DropMenu.Control>
               <Button kind="invisible">
                 <UserIcon />
@@ -247,5 +255,6 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         <div style={{ padding: 24 }}>{children}</div>
       </div>
     </div>
+    </AdminGate>
   );
 }

@@ -30,22 +30,52 @@ This template equips you with a foundational Next.js application integrated with
    npm install
    ```
 
-2. **Run the development server:**
+2. **Deploy a cloud sandbox** (required before `dev`/`build`):
+
+   ```bash
+   npx ampx sandbox
+   ```
+
+   This provisions your personal Cognito + AppSync + DynamoDB backend and writes
+   `amplify_outputs.json` to the project root. The app imports this file to
+   configure Amplify, so `npm run dev` and `npm run build` will fail until it
+   exists. (`amplify_outputs.json` is git-ignored — it's per-environment.)
+   Leave this running in its own terminal to watch for backend changes.
+
+3. **Run the development server** (in a second terminal):
 
    ```bash
    npm run dev
    ```
 
-3. **Open your browser:**
+4. **Open your browser:**
    Navigate to [http://localhost:3000](http://localhost:3000)
 
 ## Admin Interface
 
-This template includes a powerful Django-like admin interface:
+This template includes a powerful Django-like admin interface, **gated behind
+Cognito authentication**.
 
-- **Access**: Navigate to [http://localhost:3000/admin/setup](http://localhost:3000/admin/setup)
+- **Access**: Navigate to [http://localhost:3000/admin](http://localhost:3000/admin)
+- **Auth**: `/admin` requires sign-in **and** membership of the `admins` Cognito
+  group (defined in `amplify/auth/resource.ts`). A signed-in user who is not in
+  the group gets an "Access denied" screen. Add yourself after signing up once:
+
+  ```bash
+  aws cognito-idp admin-add-user-to-group \
+    --user-pool-id <userPoolId> \
+    --username <your-email> \
+    --group-name admins
+  ```
+
+  (Find `<userPoolId>` in `amplify_outputs.json` under `auth.user_pool_id`.)
 - **Features**: Dynamic model creation, full CRUD operations, multiple field types, validation, search & filtering
 - **Documentation**: See [ADMIN_COMPLETE.md](ADMIN_COMPLETE.md) for detailed usage guide
+
+> **Note:** The admin currently persists data to browser `localStorage` (see
+> [ADMIN_COMPLETE.md](ADMIN_COMPLETE.md) → "Migration to Production"). The auth
+> gate and Amplify wiring are in place; moving the data layer onto the Amplify
+> backend is the recommended next step for a real deployment.
 
 Quick start:
 
