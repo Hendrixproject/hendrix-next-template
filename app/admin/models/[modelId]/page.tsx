@@ -6,6 +6,7 @@ import Link from "next/link";
 import { schemaManager } from "@/lib/admin/schema-manager";
 import { recordManager } from "@/lib/admin/record-manager";
 import { generateResourceSnippet, type PromotionResult } from "@/lib/admin/codegen";
+import { PromoteHint } from "@/components/admin/PrototypeTierNotice";
 import type { ModelDefinition, ModelRecord } from "@/lib/admin/types";
 
 export default function ModelListPage() {
@@ -176,6 +177,8 @@ export default function ModelListPage() {
           </div>
         </div>
       )}
+
+      <PromoteHint count={total} />
 
       {/* Search and Actions */}
       <div className="flex items-center justify-between gap-4">
