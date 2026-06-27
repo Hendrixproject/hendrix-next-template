@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { schemaManager } from "@/lib/admin/schema-manager";
 import { recordManager } from "@/lib/admin/record-manager";
+import { generateResourceSnippet, type PromotionResult } from "@/lib/admin/codegen";
 import type { ModelDefinition, ModelRecord } from "@/lib/admin/types";
 
 export default function ModelListPage() {
@@ -18,6 +19,8 @@ export default function ModelListPage() {
   const [selectedRecords, setSelectedRecords] = useState<Set<string>>(
     new Set()
   );
+  const [promotion, setPromotion] = useState<PromotionResult | null>(null);
+  const [copied, setCopied] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
@@ -100,13 +103,79 @@ export default function ModelListPage() {
           </div>
           <p className="mt-2 text-muted-foreground">{model.description}</p>
         </div>
-        <Link
-          href={`/admin/models/${modelId}/create`}
-          className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90"
-        >
-          + Add {model.label}
-        </Link>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              setCopied(false);
+              setPromotion(generateResourceSnippet(model));
+            }}
+            className="px-4 py-2 border border-border rounded-lg hover:bg-muted text-sm font-medium"
+            title="Generate a typed amplify/data/resource.ts model for production"
+          >
+            🚀 Promote to production
+          </button>
+          <Link
+            href={`/admin/models/${modelId}/create`}
+            className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90"
+          >
+            + Add {model.label}
+          </Link>
+        </div>
       </div>
+
+      {/* Promote-to-production modal: typed resource.ts snippet + guidance */}
+      {promotion && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          onClick={() => setPromotion(null)}
+        >
+          <div
+            className="bg-card rounded-xl shadow-xl border border-border max-w-2xl w-full max-h-[85vh] overflow-y-auto p-6 space-y-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h2 className="text-xl font-bold text-foreground">
+                  Promote “{model.label}” to a typed model
+                </h2>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Paste this into the <code>a.schema(&#123; … &#125;)</code> block in{" "}
+                  <code>amplify/data/resource.ts</code>, then deploy. You get real
+                  indexes, types and scale — see the notes below.
+                </p>
+              </div>
+              <button
+                onClick={() => setPromotion(null)}
+                className="text-muted-foreground hover:text-foreground text-xl leading-none"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="relative">
+              <pre className="bg-muted rounded-lg p-4 text-xs overflow-x-auto text-foreground">
+                <code>{promotion.code}</code>
+              </pre>
+              <button
+                onClick={async () => {
+                  await navigator.clipboard.writeText(promotion.code);
+                  setCopied(true);
+                }}
+                className="absolute top-2 right-2 px-3 py-1 text-xs bg-primary text-white rounded hover:bg-primary/90"
+              >
+                {copied ? "Copied!" : "Copy"}
+              </button>
+            </div>
+
+            <ul className="space-y-1.5 text-sm text-muted-foreground list-disc pl-5">
+              {promotion.notes.map((n, i) => (
+                <li key={i}>{n}</li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      )}
 
       {/* Search and Actions */}
       <div className="flex items-center justify-between gap-4">
