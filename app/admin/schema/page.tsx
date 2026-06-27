@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { schemaManager } from "@/lib/admin/schema-manager";
 import { client } from "@/lib/client";
+import { TierExplainer } from "@/components/admin/PrototypeTierNotice";
 import type { FieldDefinition, FieldType } from "@/lib/admin/types";
 
 /** A model proposed by the AI, before the user confirms creation. */
@@ -158,6 +159,8 @@ export default function SchemaBuilder() {
           Create a new model with custom fields
         </p>
       </div>
+
+      <TierExplainer />
 
       {/* AI: schema from prompt */}
       <div className="bg-card rounded-lg shadow-sm border border-border p-6 space-y-4">

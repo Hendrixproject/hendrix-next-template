@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { schemaManager } from "@/lib/admin/schema-manager";
 import { recordManager } from "@/lib/admin/record-manager";
+import { PrototypeBadge } from "@/components/admin/PrototypeTierNotice";
 import type { ModelDefinition } from "@/lib/admin/types";
 
 export default function AdminDashboard() {
@@ -96,12 +97,15 @@ export default function AdminDashboard() {
                       <div className="flex items-center gap-3">
                         <span className="text-2xl">{model.icon || "📄"}</span>
                         <div>
-                          <Link
-                            href={`/admin/models/${model.id}`}
-                            className="text-lg font-medium text-foreground hover:text-primary"
-                          >
-                            {model.label}
-                          </Link>
+                          <div className="flex items-center gap-2">
+                            <Link
+                              href={`/admin/models/${model.id}`}
+                              className="text-lg font-medium text-foreground hover:text-primary"
+                            >
+                              {model.label}
+                            </Link>
+                            <PrototypeBadge />
+                          </div>
                           <p className="text-sm text-muted-foreground">
                             {model.description || "No description"}
                           </p>
